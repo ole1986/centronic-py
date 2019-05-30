@@ -37,7 +37,7 @@ def showhelp():
 	print("--channel <channel>: define the channel (1-15) being used for '--send'")
 	print("  --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)")
 	print('')
-	print('Version 0.1 - Author: ole1986')
+	print('Version 0.2 - Author: ole1986')
 
 def listen(devname):
 	if not devname:
@@ -77,32 +77,33 @@ def send(cmd, channel, devname, test = False):
 
 	codes = []
 
-	if cmd == "UP":
-		codes.append(generatecode(ch, COMMAND_UP))
-	elif cmd == "HALT":
-		codes.append(generatecode(ch, COMMAND_HALT))
-	elif cmd == "DOWN":
-		codes.append(generatecode(ch, COMMAND_DOWN))
-	elif cmd == "PAIR":
-		codes.append(generatecode(ch, COMMAND_PAIR))
+	with serial.Serial(devname, 115200, timeout=1) as ser:
+
+		if cmd == "UP":
+			codes.append(generatecode(ch, COMMAND_UP))
+		elif cmd == "HALT":
+			codes.append(generatecode(ch, COMMAND_HALT))
+		elif cmd == "DOWN":
+			codes.append(generatecode(ch, COMMAND_DOWN))
+		elif cmd == "PAIR":
+			codes.append(generatecode(ch, COMMAND_PAIR))
+			if not test:
+				increment_number()
+			codes.append(generatecode(ch, COMMAND_PAIR2))
+
 		if not test:
 			increment_number()
-		codes.append(generatecode(ch, COMMAND_PAIR2))
 
-	if not test:
-		increment_number()
+		codes.append(generatecode(ch, 0)) # append the release button code
 
-	codes.append(generatecode(ch, 0)) # append the release button code
+		if not test:
+			increment_number()
 
-	if not test:
-		increment_number()
-
-	if test: 
-		print("Running in TEST MODE (no codes will be sent / no numbers increased)")
-	else:
-		print("Running in LIVE MODE")
-
-	with serial.Serial(devname, 115200, timeout=1) as ser:
+		if test: 
+			print("Running in TEST MODE (no codes will be sent / no numbers increased)")
+		else:
+			print("Running in LIVE MODE")
+	
 		for code in codes:
 			if test:
 				print("[TEST MODE] Sending code %s to device %s" % (finalizeCode(code), devname))
