@@ -53,14 +53,17 @@ def listen(devname):
 def increment_number():
 	number = read_number()
 	number += 1
-	file = open(number_file, "w") 
+
+	filepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), number_file)
+	file = open(filepath, "w") 
 	file.write(str(number))
 
 def read_number():
-	exists = os.path.isfile(number_file)
+	filepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), number_file)
+	exists = os.path.isfile(filepath)
 	number = "0"
 	if exists:
-		file = open(number_file, "r")
+		file = open(filepath, "r")
 		number = file.read()
 	return int(number)
 
