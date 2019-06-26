@@ -15,7 +15,7 @@ code_21 = "21"
 code_remote = "01" # centronic remote control used "02" while contralControl seem to use "01"
 
 COMMAND_UP = 0x20
-COMMAND_UP2 = 0x22 # intermediate position "up"
+COMMAND_UP2 = 0x24 # intermediate position "up"
 COMMAND_DOWN = 0x40
 COMMAND_DOWN2 = 0x44 # intermediate position "down" (sun protection)
 COMMAND_HALT = 0x10
