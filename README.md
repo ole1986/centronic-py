@@ -3,7 +3,7 @@
 This project is used to automate "Becker Antriebe" shutter also known as CC11 or CC51 using the Centronic Stick V2
 
 ```
-./centronic-stick.py [-hlit] [--checksum <code>] [--device <device>] [--send <UP|DOWN|HALT|PAIR> --channel <channel>]
+./centronic-py/centronic-stick.py [-hlit] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|PAIR> --channel <channel>]
 
 This script is used send command codes to CC11/CC51 compatible receivers through the CentronicControl USB Stick
 It is necessary to own such USB device and to PAIR it first, before using commands like UP and DOWN
@@ -12,12 +12,13 @@ It is necessary to own such USB device and to PAIR it first, before using comman
                  -l: listen on the centronic USB device to fetch the codes
                  -i: increment the number (possible workaround for already consumed numbers)
                  -t: test mode - no codes will be send and no numbers consumed / works only with '--send'
-   --send <command>: submit a completely generated code for UP/DOWN/HALT/PAIR commands / requires '--channel'
+   --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/PAIR commands / requires '--channel'
+                     While UP2 and DOWN2 are the intermediate position (E.g. sun protection)
   --device <device>: set the device if it differs from the default
 --channel <channel>: define the channel (1-15) being used for '--send'
   --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)
 
-Version 0.1 - Author: ole1986
+Version 0.2 - Author: ole1986
 ```
 
 ### PAIRING
@@ -69,3 +70,18 @@ Since the script requires to increase a sequential number a file is created into
 This number can be increased carefully, when the shutter does not respond. 
 
 Entering a number lower then the actual will definitely stop the shutter from working.
+
+
+### CHANGELOG
+
+**v0.3**
+
+- added commands "DOWN2" and "UP2" for intermediate positions
+
+**v0.2**
+
+- always use "centronic.num" from its local directory
+
+**v0.1**
+
+- Initial version
