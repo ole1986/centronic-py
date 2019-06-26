@@ -15,7 +15,9 @@ code_21 = "21"
 code_remote = "01" # centronic remote control used "02" while contralControl seem to use "01"
 
 COMMAND_UP = 0x20
+COMMAND_UP2 = 0x22 # intermediate position "up"
 COMMAND_DOWN = 0x40
+COMMAND_DOWN2 = 0x44 # intermediate position "down" (sun protection)
 COMMAND_HALT = 0x10
 COMMAND_PAIR = 0x80
 COMMAND_PAIR2 = 0x81 # simulates the delay of 3 seconds
@@ -23,7 +25,7 @@ COMMAND_PAIR3 = 0x82 # simulates the delay of 6 seconds
 COMMAND_PAIR4 = 0x83 # simulates the delay of 10 seconds (important for deletion)
 
 def showhelp():
-	print('%s [-hlit] [--checksum <code>] [--device <device>] [--send <UP|DOWN|HALT|PAIR> --channel <channel>]' % sys.argv[0])
+	print('%s [-hlit] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|PAIR> --channel <channel>]' % sys.argv[0])
 	print('')
 	print('This script is used send command codes to CC11/CC51 compatible receivers through the CentronicControl USB Stick')
 	print('It is necessary to own such USB device and to PAIR it first, before using commands like UP and DOWN')
@@ -32,12 +34,13 @@ def showhelp():
 	print("                 -l: listen on the centronic USB device to fetch the codes")
 	print("                 -i: increment the number (possible workaround for already consumed numbers)")
 	print("                 -t: test mode - no codes will be send and no numbers consumed / works only with '--send'")
-	print("   --send <command>: submit a completely generated code for UP/DOWN/HALT/PAIR commands / requires '--channel'")
+	print("   --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/PAIR commands / requires '--channel'")
+	print("                     While UP2 and DOWN2 are the intermediate position (E.g. sun protection)")
 	print("  --device <device>: set the device if it differs from the default")
 	print("--channel <channel>: define the channel (1-15) being used for '--send'")
 	print("  --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)")
 	print('')
-	print('Version 0.2 - Author: ole1986')
+	print('Version 0.3 - Author: ole1986')
 
 def listen(devname):
 	if not devname:
@@ -84,10 +87,14 @@ def send(cmd, channel, devname, test = False):
 
 		if cmd == "UP":
 			codes.append(generatecode(ch, COMMAND_UP))
+		elif cmd == "UP2":
+			codes.append(generatecode(ch, COMMAND_UP2))
 		elif cmd == "HALT":
 			codes.append(generatecode(ch, COMMAND_HALT))
 		elif cmd == "DOWN":
 			codes.append(generatecode(ch, COMMAND_DOWN))
+		elif cmd == "DOWN2":
+			codes.append(generatecode(ch, COMMAND_DOWN2))
 		elif cmd == "PAIR":
 			codes.append(generatecode(ch, COMMAND_PAIR))
 			if not test:
