@@ -26,7 +26,7 @@ Version 0.2 - Author: ole1986
 Run the `install.sh` script to install all necessary dependencies.
 The installer will also configure sudo to allow FHEM the execution of `centronic-stick.py` as current user.
 
-For those who are familar with the installation, the follow steps are required
+For those who are familar with the installation routine, the following steps are required
 
 * Install python3 pip
 * Install python3 module `pyserial` using python3 pip
