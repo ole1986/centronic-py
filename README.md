@@ -21,6 +21,17 @@ It is necessary to own such USB device and to PAIR it first, before using comman
 Version 0.2 - Author: ole1986
 ```
 
+### INSTALL
+
+Run the `install.sh` script to install all necessary dependencies.
+The installer will also configure sudo to allow FHEM the execution of `centronic-stick.py` as current user.
+
+For those who are familar with the installation, the follow steps are required
+
+* Install python3 pip
+* Install python3 module `pyserial` using python3 pip
+* Add `fhem` user into sudoers file to allow executing `centronic-stick.py` from the FHEM website
+
 ### PAIRING
 
 Before the USB stick can be used, a pairing must be achieved.

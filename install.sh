@@ -10,14 +10,24 @@ echo "Checking for PIP..."
 
 if ! [[ $(dpkg -l |grep "^ii  python3-pip ") ]]
 then
-    echo "Python 3 PIP is not installed"
-    read -p "Do you want to install now? " -n 1 -r
-    echo
-    [[ $REPLY =~ ^[Yy]$ ]] && sudo apt-get install python3-pip
+    echo "Installing python3 pip..."
+    sudo apt-get install python3-pip
 fi
 
-echo
-read -p "Run PIP now to install the required modules? " -n 1 -r
-[[ $REPLY =~ ^[Yy]$ ]] && /usr/bin/python3 -m pip install pyserial
-echo
+echo "Installing pip module 'pyserial'"
+/usr/bin/python3 -m pip install pyserial
+
+echo "Checking for FHEM installation..."
+if [ -d "/opt/fhem"]
+then
+    read -p "Allow FHEM to run 'centronic-stick.py' as $USER? " -n 1 -r
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        if ! sudo grep -E '^fhem.*centronic-stick.py' /etc/sudoers
+        then
+            sudo echo "# allow fhem user to execute centronic-stick.py as $USER" >> /etc/sudoers
+            sudo echo "fhem ALL=($USER) NOPASSWD: $PWD/centronic-stick.py" >> /etc/sudoers
+        fi
+    fi
+fi
 echo "Installation completed"
