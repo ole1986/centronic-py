@@ -4,6 +4,7 @@ import sys
 import getopt
 import os
 import time
+import socket
 import serial  # pyserial module required
 
 # <STX> and <ETX> for every single code being send
@@ -44,7 +45,7 @@ def showhelp():
     print("                 -t: test mode - no codes will be send and no numbers consumed / works only with '--send'")
     print("   --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/PAIR commands / requires '--channel'")
     print("                     While UP2 and DOWN2 are the intermediate position (E.g. sun protection)")
-    print("  --device <device>: set the device if it differs from the default")
+    print("  --device <device>: set the device if it differs from the default, also host:port possible (ser2net)")
     print("--channel <channel>: define the channel (1-15) being used for '--send'")
     print("  --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)")
     print('')
@@ -78,10 +79,32 @@ class NumberFile:
 class USBStick:
 
     def __init__(self, devname=default_device_name):
-        if not os.path.exists(default_device_name):
+        self.is_serial = "/" in devname
+        if self.is_serial and not os.path.exists(devname):
             raise FileExistsError(devname + " don't exists")
-        self.devfile = devname
+        self.device = devname
         self.num_file = NumberFile()
+        if self.is_serial:
+            self.s = serial.Serial(self.device, 115200, timeout=1)
+            self.write_function = self.s.write
+        else:
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            host,port = self.device.split(':')
+            self.s.connect((host,int(port)))
+            self.write_function = self.s.sendall
+
+    def write(self,codes,test):
+        for code in codes:
+            if test:
+                print("[TEST MODE] Sending code %s to device %s" %
+                    (finalizeCode(code), self.device))
+            else:
+                print("Sending code %s to device %s" %
+                    (code, self.device))
+
+            if not test:
+                self.write_function(finalizeCode(code))
+            time.sleep(0.1)
 
     def send(self, cmd, channel, test=False):
         ch = int(channel)
@@ -90,65 +113,52 @@ class USBStick:
             print("Channel must be in range 1-15 (15 = F)")
             return
 
-        if not self.devfile:
+        if not self.device:
             print("No device defined")
             return
 
         codes = []
-
-        with serial.Serial(self.devfile, 115200, timeout=1) as ser:
-
-            if cmd == "UP":
-                codes.append(self.generatecode(ch, COMMAND_UP))
-            elif cmd == "UP2":
-                codes.append(self.generatecode(ch, COMMAND_UP2))
-            elif cmd == "HALT":
-                codes.append(self.generatecode(ch, COMMAND_HALT))
-            elif cmd == "DOWN":
-                codes.append(self.generatecode(ch, COMMAND_DOWN))
-            elif cmd == "DOWN2":
-                codes.append(self.generatecode(ch, COMMAND_DOWN2))
-            elif cmd == "PAIR":
-                codes.append(self.generatecode(ch, COMMAND_PAIR))
-                self.num_file.inc(test)
-                codes.append(self.generatecode(ch, COMMAND_PAIR2))
-
+        if cmd == "UP":
+            codes.append(self.generatecode(ch, COMMAND_UP))
+        elif cmd == "UP2":
+            codes.append(self.generatecode(ch, COMMAND_UP2))
+        elif cmd == "HALT":
+            codes.append(self.generatecode(ch, COMMAND_HALT))
+        elif cmd == "DOWN":
+            codes.append(self.generatecode(ch, COMMAND_DOWN))
+        elif cmd == "DOWN2":
+            codes.append(self.generatecode(ch, COMMAND_DOWN2))
+        elif cmd == "PAIR":
+            codes.append(self.generatecode(ch, COMMAND_PAIR))
             self.num_file.inc(test)
+            codes.append(self.generatecode(ch, COMMAND_PAIR2))
 
-            # append the release button code
-            codes.append(self.generatecode(ch, 0))
+        self.num_file.inc(test)
 
-            self.num_file.inc(test)
+        # append the release button code
+        codes.append(self.generatecode(ch, 0))
 
-            if test:
-                print(
-                    "Running in TEST MODE (no codes will be sent / no numbers increased)")
-            else:
-                print("Running in LIVE MODE")
+        self.num_file.inc(test)
 
-            for code in codes:
-                if test:
-                    print("[TEST MODE] Sending code %s to device %s" %
-                          (finalizeCode(code), self.devfile))
-                else:
-                    print("Sending code %s to device %s" %
-                          (code, self.devfile))
+        if test:
+            print(
+                "Running in TEST MODE (no codes will be sent / no numbers increased)")
+        else:
+            print("Running in LIVE MODE")
 
-                if not test:
-                    ser.write(finalizeCode(code))
-
-                time.sleep(0.1)
+        self.write(codes,test)
 
     def listen(self):
-        if not self.devfile:
-            print("No device defined")
-
-        print("Listening on %s" % self.devfile)
-        with serial.Serial(self.devfile, 115200, timeout=1) as ser:
+        if self.is_serial:
+            print("Listening on %s" % self.device)
             while(True):
-                if (ser.inWaiting() > 0):
-                    data_str = ser.read(ser.inWaiting())
+                if (self.s.inWaiting() > 0):
+                    data_str = self.s.read(self.s.inWaiting())
                     print(data_str)
+        else:
+            while(True):
+                data = self.s.recv(48)
+                print ('Received', repr(data))
 
     def generatecode(self, channel, cmd_code, with_checksum=True):
         number = self.num_file.get()
@@ -167,15 +177,15 @@ class USBStick:
 
 
 def hex2(n):
-    return "%02X" % (n & 0xFF)
+    return '%02X' % (n & 0xFF)
 
 
 def hex4(n):
-    return "%04X" % (n & 0xFFFF)
+    return '%04X' % (n & 0xFFFF)
 
 
 def finalizeCode(code):
-    return "".join([STX, code.encode(), ETX])
+    return b"".join([STX,code.encode(),ETX])
 
 
 def checksum(code):
