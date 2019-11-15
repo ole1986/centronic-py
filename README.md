@@ -14,11 +14,11 @@ It is necessary to own such USB device and to PAIR it first, before using comman
                  -t: test mode - no codes will be send and no numbers consumed / works only with '--send'
    --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/PAIR commands / requires '--channel'
                      While UP2 and DOWN2 are the intermediate position (E.g. sun protection)
-  --device <device>: set the device if it differs from the default
+  --device <device>: set the device if it differs from the default, also host:port possible (ser2net)
 --channel <channel>: define the channel (1-15) being used for '--send'
   --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)
 
-Version 0.2 - Author: ole1986
+Version 0.4 - Author: ole1986 / toolking
 ```
 
 ### INSTALL
@@ -84,6 +84,10 @@ Entering a number lower then the actual will definitely stop the shutter from wo
 
 
 ### CHANGELOG
+
+**v0.4**
+
+- added ser2net support for device
 
 **v0.3**
 

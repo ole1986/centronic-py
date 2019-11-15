@@ -49,7 +49,7 @@ def showhelp():
     print("--channel <channel>: define the channel (1-15) being used for '--send'")
     print("  --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)")
     print('')
-    print('Version 0.3 - Author: ole1986')
+    print('Version 0.4 - Author: ole1986 / toolking')
 
 
 class NumberFile:
