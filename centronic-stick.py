@@ -88,7 +88,11 @@ class USBStick:
             self.write_function = self.s.write
         else:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            host,port = self.device.split(':')
+            if ':' in devname:
+                host,port = self.device.split(':')
+            else:
+                host = devname
+                port = '5000'
             self.s.connect((host,int(port)))
             self.write_function = self.s.sendall
 
