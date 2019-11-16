@@ -49,8 +49,7 @@ def showhelp():
     print("--channel <channel>: define the channel (1-15) being used for '--send'")
     print("  --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)")
     print('')
-    print('Version 0.4 - Author: ole1986 / toolking')
-
+    print('Version 0.4 - Authors: ole1986, toolking')
 
 class NumberFile:
 
@@ -141,8 +140,7 @@ class USBStick:
         self.num_file.inc(test)
 
         if test:
-            print(
-                "Running in TEST MODE (no codes will be sent / no numbers increased)")
+            print("Running in TEST MODE")
         else:
             print("Running in LIVE MODE")
 
@@ -219,10 +217,12 @@ def main(argv):
 
         if len(opts) < 1:
             showhelp()
+            return
 
         for (opt, arg) in opts:
             if opt == '-h':
                 showhelp()
+                return
             elif opt in ('-i'):
                 NumberFile().inc()
             elif opt in ('-t'):
