@@ -34,7 +34,7 @@ COMMAND_PAIR4 = 0x83
 
 
 def showhelp():
-    print('%s [-hlit] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|PAIR> --channel <channel>]' % sys.argv[0])
+    print('%s [-hlit] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|PAIR|PAIRMASTER> --channel <channel>]' % sys.argv[0])
     print('')
     print('This script is used send command codes to CC11/CC51 compatible receivers through the CentronicControl USB Stick')
     print('It is necessary to own such USB device and to PAIR it first, before using commands like UP and DOWN')
@@ -135,6 +135,11 @@ class USBStick:
             codes.append(self.generatecode(ch, COMMAND_PAIR))
             self.num_file.inc(test)
             codes.append(self.generatecode(ch, COMMAND_PAIR2))
+        elif cmd == "PAIRMASTER":
+            # untested variant to pair the stick as master sender
+            codes.append(self.generatecode(ch, COMMAND_PAIR))
+            self.num_file.inc(test)
+            codes.append(self.generatecode(ch, COMMAND_PAIR4))
 
         self.num_file.inc(test)
 
