@@ -4,6 +4,7 @@ import sys
 import getopt
 import os
 import time
+import sqlite3
 import socket
 import serial  # pyserial module required
 
@@ -74,15 +75,101 @@ class NumberFile:
             number = file.read()
         return int(number)
 
+class Database:
+
+    def __init__(self):
+        self.filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'centronic-stick.db')
+        self.conn = sqlite3.connect(self.filename)
+        self.check()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.conn.close()
+        
+    def check(self):
+        # check if table already exist
+        c = self.conn.cursor()
+        checkTable = c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='channel'")
+        if checkTable.fetchone() is None:
+            self.create()
+            self.migrate()
+
+    def migrate(self):
+        # migrate the previous *.num file into its sqllite database
+        self.oldfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), number_file)
+
+        if not os.path.isfile(self.oldfile):
+            return
+
+        try:
+            print('Migrate previous *.num file...')
+            with open(self.oldfile, "r") as file:
+                number = int(file.read())
+
+            c = self.conn.cursor()
+            c.execute("UPDATE channel SET increment = ?", (number,))
+            self.conn.commit()
+            os.remove(self.oldfile)
+        except:
+            print('Migration failed')
+            self.conn.rollback()
+
+    def create(self):
+        # create the database table
+
+        print('Create database...')
+        c = self.conn.cursor()
+        c.execute('CREATE TABLE channel (number INTEGER(1), increment INTEGER(4), executed INTEGER, UNIQUE(number))')
+        for i in range(1, 15):
+            c.execute("INSERT INTO channel VALUES (?, ?, ?)", (i, 0, 0,))
+
+        self.conn.commit()
+
+    def output(self):
+        c = self.conn.cursor()
+        res = c.execute('SELECT * FROM channel')
+        print('%-10s%-10s%-15s' % ('channel', 'increment', 'last run'))
+        for line in res.fetchall():
+            lastrun='(unknown)'
+            if line[2] > 0:
+                lastrun = time.strftime('%Y-%m-%d %H:%m', time.localtime(line[2]))
+            print('%-10s%-10s%-15s' % (line[0], line[1], lastrun))
+
+    def inc(self, channel, test=False):
+        c = self.conn.cursor()
+        last_run = int(time.time())
+
+        if channel == 15:
+            # update all channels when broadcast is called
+            c.execute('UPDATE channel SET increment = (SELECT MAX(increment) FROM channel) + 1, executed = ?', (last_run,))
+        else:
+            # update only the related
+            c.execute('UPDATE channel SET increment = increment + 1, executed = ? WHERE number = ?', (last_run, channel,))
+        
+        if test:
+            self.conn.rollback()
+            return
+
+        self.conn.commit()
+    def get(self, channel):
+        c = self.conn.cursor()
+
+        if channel == 15:
+            result = c.execute('SELECT MAX(increment) FROM channel')
+        else:
+            result = c.execute('SELECT increment FROM channel WHERE number = ?', (channel,))
+        return int(result.fetchone()[0])
 
 class USBStick:
 
-    def __init__(self, devname=default_device_name):
+    def __init__(self, conn, devname=default_device_name):
         self.is_serial = "/" in devname
         if self.is_serial and not os.path.exists(devname):
             raise FileExistsError(devname + " don't exists")
         self.device = devname
-        self.num_file = NumberFile()
+        self.db = conn
         if self.is_serial:
             self.s = serial.Serial(self.device, 115200, timeout=1)
             self.write_function = self.s.write
@@ -133,20 +220,19 @@ class USBStick:
             codes.append(self.generatecode(ch, COMMAND_DOWN2))
         elif cmd == "PAIR":
             codes.append(self.generatecode(ch, COMMAND_PAIR))
-            self.num_file.inc(test)
+            self.db.inc(ch, test)
             codes.append(self.generatecode(ch, COMMAND_PAIR2))
         elif cmd == "PAIRMASTER":
-            # untested variant to pair the stick as master sender
             codes.append(self.generatecode(ch, COMMAND_PAIR))
-            self.num_file.inc(test)
+            self.db.inc(ch, test)
             codes.append(self.generatecode(ch, COMMAND_PAIR4))
 
-        self.num_file.inc(test)
+        self.db.inc(ch, test)
 
         # append the release button code
         codes.append(self.generatecode(ch, 0))
 
-        self.num_file.inc(test)
+        self.db.inc(ch, test)
 
         if test:
             print("Running in TEST MODE")
@@ -168,7 +254,7 @@ class USBStick:
                 print ('Received', repr(data))
 
     def generatecode(self, channel, cmd_code, with_checksum=True):
-        number = self.num_file.get()
+        number = self.db.get(channel)
         code = "".join([
             code_prefix,
             hex4(number),
@@ -217,12 +303,13 @@ def main(argv):
         test_only = False
         is_listen = False
         is_send = False
+        is_stats = False
         code = ""
         cmd = ""
         channel = "0"
         device = default_device_name
         opts, _ = getopt.getopt(
-            argv, "hlit", ["checksum=", "device=", "channel=", "send="])
+            argv, "hlits", ["checksum=", "device=", "channel=", "send="])
 
         if len(opts) < 1:
             showhelp()
@@ -232,6 +319,8 @@ def main(argv):
             if opt == '-h':
                 showhelp()
                 return
+            elif opt in ['-s']:
+                is_stats = True
             elif opt in ('-i'):
                 NumberFile().inc()
             elif opt in ('-t'):
@@ -248,15 +337,18 @@ def main(argv):
             elif opt in ("--checksum"):
                 code = arg
 
-        stick = USBStick(device)
-        if is_listen and not is_send:
-            stick.listen()
-        elif is_send and not is_listen:
-            stick.send(cmd, channel, test_only)
-        elif code:
-            code = checksum(code)
-            if code:
-                print(code)
+        with Database() as db:
+            stick = USBStick(db, device)
+            if is_stats:
+                db.output()
+            if is_listen and not is_send:
+                stick.listen()
+            elif is_send and not is_listen:
+                stick.send(cmd, channel, test_only)
+            elif code:
+                code = checksum(code)
+                if code:
+                    print(code)
 
     except getopt.GetoptError:
         sys.exit(2)
