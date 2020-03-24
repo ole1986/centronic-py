@@ -1,11 +1,11 @@
-# Using Centronic USB Stick to control Becker Shutter CC11/CC51
+# Using Centronic USB Stick to control Becker Shutter CC31/CC51
 
-This project is used to automate "Becker Antriebe" shutter also known as CC11 or CC51 using the Centronic Stick V2
+This project is used to automate "Becker Antriebe" shutter also known as CC31 or CC51 using the Centronic Stick V2
 
 ```
 ./centronic-py/centronic-stick.py [-hlit] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|PAIR> --channel <channel>]
 
-This script is used send command codes to CC11/CC51 compatible receivers through the CentronicControl USB Stick
+This script is used send command codes to CC31/CC51 compatible receivers through the CentronicControl USB Stick
 It is necessary to own such USB device and to PAIR it first, before using commands like UP and DOWN
 
                  -h: shows this help
