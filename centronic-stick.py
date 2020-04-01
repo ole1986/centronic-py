@@ -12,26 +12,22 @@ import serial  # pyserial module required
 STX = b'\x02'
 ETX = b'\x03'
 
-default_device_name = '/dev/serial/by-id/usb-BECKER-ANTRIEBE_GmbH_CDC_RS232_v125_Centronic-if00'
-number_file = "centronic-stick.num"
-code_prefix = "0000000002010B"  # 0-23 (24 chars)
-code_suffix = "000000"
-# 24-32 (8 chars) / CentralControl number (https://forum.fhem.de/index.php/topic,53756.165.html)
-code_21 = "021"
-# centronic remote control used "02" while contralControl seem to use "01"
-code_remote = "01"
+DEFAULT_DEVICE_NAME = '/dev/serial/by-id/usb-BECKER-ANTRIEBE_GmbH_CDC_RS232_v125_Centronic-if00'
+NUMBER_FILE = "centronic-stick.num" # (deprecated) previously used to store increment counter
+CODE_PREFIX = "0000000002010B"  # some code prefix 0-23 (24 chars) followed by the increment
+CODE_SUFFIX = "000000" # some code suffix right after the increment
+CODE_21 = "021" # some code "021" right after the unit ids
+CODE_REMOTE = "01" # centronic remote control used "02" while contralControl seem to use "01"
 
-COMMAND_HALT = 0x10
-COMMAND_UP = 0x20
+COMMAND_HALT = 0x10 # stop 
+COMMAND_UP = 0x20 # move up
 COMMAND_UP2 = 0x24  # intermediate position "up"
-COMMAND_DOWN = 0x40
+COMMAND_DOWN = 0x40 # move down
 COMMAND_DOWN2 = 0x44  # intermediate position "down" (sun protection)
-COMMAND_PAIR = 0x80
-COMMAND_PAIR2 = 0x81  # simulates the delay of 3 seconds
-COMMAND_PAIR3 = 0x82  # simulates the delay of 6 seconds
-# simulates the delay of 10 seconds (important for deletion)
-COMMAND_PAIR4 = 0x83
-
+COMMAND_PAIR = 0x80 # pair button press
+COMMAND_PAIR2 = 0x81  # pair button pressed for 3 seconds (without releasing)
+COMMAND_PAIR3 = 0x82  # pair button pressed for 6 seconds (without releasing)
+COMMAND_PAIR4 = 0x83 # pair button pressed for 10 seconds (without releasing)
 
 def showhelp():
     print('%s [-hlst] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|TRAIN|REMOVE> --channel <[unit:]channel>]' % sys.argv[0])
@@ -75,7 +71,7 @@ class Database:
 
     def migrate(self):
         # migrate the previous *.num file into its sqllite database
-        self.oldfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), number_file)
+        self.oldfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), NUMBER_FILE)
 
         if not os.path.isfile(self.oldfile):
             return
@@ -120,8 +116,9 @@ class Database:
         res = c.execute("SELECT code, increment, configured FROM unit WHERE rowid = ?", (rowid,))
         result = res.fetchone()
 
-        if result is not None:
-            return list(result)
+        return list(result) if result is not None else result
+        #if result is not None:
+        #    return list(result)
 
     def get_all_units(self):
         c = self.conn.cursor()
@@ -147,7 +144,7 @@ class Database:
     
 class USBStick:
 
-    def __init__(self, conn, devname=default_device_name):
+    def __init__(self, conn, devname=DEFAULT_DEVICE_NAME):
         self.is_serial = "/" in devname
         if self.is_serial and not os.path.exists(devname):
             raise FileExistsError(devname + " don't exists")
@@ -170,7 +167,7 @@ class USBStick:
         for code in codes:
             if test:
                 print("[TEST MODE] Sending code %s to device %s" %
-                    (finalizeCode(code), self.device))
+                    (code, self.device))
             else:
                 print("Sending code %s to device %s" %
                     (code, self.device))
@@ -198,6 +195,9 @@ class USBStick:
 
         if un > 0:
             unit = self.db.get_unit(un)
+            if unit is None:
+                print("No unit on index %s found" % (un))
+                return
             self.runcodes(ch, unit, cmd, test)
         else:
             units = self.db.get_all_units()
@@ -250,11 +250,6 @@ class USBStick:
 
         unit[1] += 1
 
-        if test:
-            print("Running in TEST MODE")
-        else:
-            print("Running in LIVE MODE")
-
         self.write(codes,test)
         self.db.set_unit(unit, test)
 
@@ -270,23 +265,12 @@ class USBStick:
                 data = self.s.recv(48)
                 print ('Received', repr(data))
 
-    def generatecode(self, channel, device, cmd_code, with_checksum=True):
-        deviceId = device[0]
-        deviceIncrement = device[1]
+    def generatecode(self, channel, unit, cmd_code, with_checksum=True):
+        unitId = unit[0] # contains the unit code in hex (5 chars)
+        unitIncrement = unit[1] # contains the next increment (required to convert into hex4)
 
-        code = "".join([
-            code_prefix,
-            hex4(deviceIncrement),
-            code_suffix,
-            deviceId,
-            code_21,
-            code_remote,
-            hex2(channel),
-            '00',
-            hex2(cmd_code)
-        ])
+        code = CODE_PREFIX + hex4(unitIncrement) + CODE_SUFFIX + unitId + CODE_21 + CODE_REMOTE + hex2(channel) + '00' + hex2(cmd_code)
         return checksum(code) if with_checksum else code
-
 
 def hex2(n):
     return '%02X' % (n & 0xFF)
@@ -327,7 +311,7 @@ def main(argv):
         code = ""
         cmd = ""
         channel = "0"
-        device = default_device_name
+        device = DEFAULT_DEVICE_NAME
         opts, _ = getopt.getopt(
             argv, "hlits", ["checksum=", "device=", "channel=", "send=", "mod="])
 
