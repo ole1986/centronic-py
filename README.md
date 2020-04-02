@@ -1,30 +1,33 @@
 # Using Centronic USB Stick to control Becker Shutter CC31/CC51
 
+[![Donations Badge](https://yourdonation.rocks/images/badge.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TDSRUDJ9EL98J&source=url)
+
 This project is used to automate "Becker Antriebe" shutter also known as CC31 or CC51 using the Centronic Stick V2
 
 ```
-./centronic-py/centronic-stick.py [-hlit] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|PAIR> --channel <channel>]
+./centronic-stick.py [-hlst] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|TRAIN|REMOVE> --channel <[unit:]channel>]
 
-This script is used send command codes to CC31/CC51 compatible receivers through the CentronicControl USB Stick
+This script is used send command codes to CC11/CC51 compatible receivers through the CentronicControl USB Stick
 It is necessary to own such USB device and to PAIR it first, before using commands like UP and DOWN
 
                  -h: shows this help
                  -l: listen on the centronic USB device to fetch the codes
-                 -i: increment the number (possible workaround for already consumed numbers)
+                 -s: display the current db stats (incl. last run of a unit)
                  -t: test mode - no codes will be send and no numbers consumed / works only with '--send'
-   --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/PAIR commands / requires '--channel'
+   --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/TRAIN/REMOVE commands / requires '--channel'
                      While UP2 and DOWN2 are the intermediate position (E.g. sun protection)
   --device <device>: set the device if it differs from the default, also host:port possible (ser2net)
---channel <channel>: define the channel (1-15) being used for '--send'
+--channel <[unit:]channel>: define the unit (1-3) and channel (1-7) being used for '--send'. Example: 2:15 will close shutter for unit 2 on all channels
   --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)
+   --mod <modifier>: used to manipulate the db entries - FOR VERY ADVANCED USERS
 
-Version 0.4 - Authors: ole1986, toolking
+Version 0.5 - Authors: ole1986, toolking
 ```
 
-### INSTALL
+### INSTALLATION
 
 Run the `install.sh` script to install all necessary dependencies.
-The installer will also configure sudo to allow FHEM the execution of `centronic-stick.py` as current user.
+The installer will also configure sudo to allow FHEM the execution of `centronic-stick.py`.
 
 For those who are familar with the installation routine, the following steps are required
 
@@ -32,58 +35,129 @@ For those who are familar with the installation routine, the following steps are
 * Install python3 module `pyserial` using python3 pip
 * Add `fhem` user into sudoers file to allow executing `centronic-stick.py` from the FHEM website
 
-### PAIRING
+### PROGRAM THE RECEIVER
 
-Before the USB stick can be used, a pairing must be achieved.
+To make recievers listening to the USB Stick, the "master sender" is required to add a new sender.
+The "master sender" can either be the wall-mounted transmitter or a remote.
 
-To make the reciever listening to new senders, either the "receiver" itself or the "master sender" can be used. For the sake of simplicity the below steps are focused on the "master sender" (this can be a wall-mounted transmitter or a remote / BUT NEVER BOTH)
-
-**1) Press and hold the programming button on the master sender for 3 seconds**
+**1) Press and hold the programming button on the MASTER SENDER for ~3 seconds**
 The receiver should confirm with a single "Klack" noise
 
-**2) Run the below commands to simulate the programming button two time**
-The receiver should confirm with a single "Klack" noise followed by a "Klack - Klack" once the pairing succeeded
+**2) Run the below command to TRAIN the receiver**
+The receiver should confirm with a single "Klack" noise followed by a "Klack - Klack" once the training succeeded
 
 ```
-./centronic-stick.py --send PAIR --channel 1
-./centronic-stick.py --send PAIR --channel 1
+./centronic-stick.py --send TRAIN --channel 1
 ```
 
-Repeat the steps for all receivers.
-To control each receiver individually it is neccessary to change the channel number. Otherwise all paired receivers will act on the same channel
+Repeat the steps for all the receivers using different channels (E.g. `--channel 2`, `--channel 3`, [...])
 
-*You have successfully paired the Centronic Stick with your shutter*
+*You have successfully paired the Centronic Stick with your shutter(s)*
 
-### CONTROL
+### MORE CHANNELS
+
+By default the `--channel` argument relays on a single unit for a maximum of **7 channels**. 
+If more channels are required, the `--channel` argument can be used to choose different units (max 3)
+
+Example:
+
+```
+# program another unit on channel 1
+./centronic-stick.py --send TRAIN --channel 2:1
+```
+
+```
+# program a third unit on channel 7
+./centronic-stick.py --send TRAIN --channel 3:7
+```
+
+### CONTROL EXAMPLE
 
 To move down the shutter, run the below command (amend the channel if neccessary)
 
 ```
+# move down the shutter programmed on channel 1 for unit 1
 ./centronic-stick.py --send DOWN --channel 1
 ```
 
-To move up the shutter, run the below command
+To move up the shutter on unit 2 and channel, run the below command
 
 ```
-./centronic-stick.py --send UP --channel 1
+# move up the shutter programmed on channel 1 for unit 2
+./centronic-stick.py --send UP --channel 2:1
 ```
 
-To pause the movement, run the command
+To pause the movement on unit 3 and channel 1 (which is not the same as unit 1 and channel 1), run the command
 
 ```
-./centronic-stick.py --send HALT --channel 1
+# stop shutter on unit 3 channel 1
+./centronic-stick.py --send HALT --channel 3:1
+```
+
+To move down all shutters per explicit unit, run the below command
+
+```
+# --channel 15 and --channel 1:15 is the same
+./centronic-stick.py --send HALT --channel 1:15
+```
+
+To move down all shutters on ALL configured units, run the below command (check `-s` argument to see which unit is configured)
+
+```
+# move down shutter on all configured units and all channels (15 = broadcast)
+./centronic-stick.py --send DOWN --channel 0:15
+```
+
+### REMOVE SENDER
+
+To unpair the centronic-stick.py the following steps can be achieved
+
+**1) Press and hold the programming button on the MASTER SANDER for 3 seconds**
+The receiver should confirm with a single "Klack" noise
+
+**2) Run the below commands to REMOVE the sender from its receiver**
+The receiver should confirm with a single "Klack" noise followed by a "Klack - Klack"
+
+```
+# remove unit 1 with channel 1 from the shutter
+./centronic-stick.py --send REMOVE --channel 1
+```
+
+**Please note that this command is per channel*
+
+Once ALL SENDERS for a specific unit are removed from ALL RECEIVERS it is safe to reset the increment counter using `--mod` argument.
+
+### DB OUTPUT
+
+Below is an example output of the sqlite3 database
+
+```
+code      increment configured  last run       
+1737b     825       1           2020-04-01 17:26
+1737c     0         0           (unknown)      
+1737d     0         0           (unknown)  
 ```
 
 ### TROUBLESHOOTING
 
-Since the script requires to increase a sequential number a file is created into the same directory `centronic-stick.num`
+Since this script requires to store the incremental numbers for any unit being configured, the database file `centronic-stick.db` is used.
+It might be necessary to manually change or increase the number to match with the receiver.
 
-This number can be increased carefully, when the shutter does not respond. 
-
-Entering a number lower then the actual will definitely stop the shutter from working.
-
+Use the argument `--mod "<code>:<increment>:<configured>"` (CAREFULLY) to set the unit properties
 
 ### CHANGELOG
+
+**v0.5**
+
+- save incremental numbers (per unit) into sqlite3 db
+- support for up to 3 units (allowing to manage ~21 channels)
+- corrected the channels being used (1-7 and 15)
+- slightly amended `--channel <[unit:]channel>` parameter to take units into account
+- added `-s` argument to output sqllite3 db content (containing last run for instance)
+- removed `-i` to manually increment counter
+- added `--mod` (for very advanced users) to modify database entry
+- replaced `PAIR` command with `TRAIN` needed to train the shutter
+- added `REMOVE` command to remove the sender from shutter
 
 **v0.4**
 
