@@ -17,11 +17,11 @@ It is necessary to own such USB device and to PAIR it first, before using comman
    --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/TRAIN/REMOVE commands / requires '--channel'
                      While UP2 and DOWN2 are the intermediate position (E.g. sun protection)
   --device <device>: set the device if it differs from the default, also host:port possible (ser2net)
---channel <[unit:]channel>: define the unit (1-3) and channel (1-7) being used for '--send'. Example: 2:15 will close shutter for unit 2 on all channels
+--channel <[unit:]channel>: define the unit (1-5) and channel (1-7) being used for '--send'. Example: 2:15 will close shutter for unit 2 on all channels
   --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)
    --mod <modifier>: used to manipulate the db entries - FOR VERY ADVANCED USERS
 
-Version 0.5 - Authors: ole1986, toolking
+Version 0.6 - Authors: ole1986, toolking
 ```
 
 ### INSTALLATION
