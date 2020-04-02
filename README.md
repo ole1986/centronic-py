@@ -1,5 +1,7 @@
 # Using Centronic USB Stick to control Becker Shutter CC31/CC51
 
+[![Donations Badge](https://yourdonation.rocks/images/badge.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TDSRUDJ9EL98J&source=url)
+
 This project is used to automate "Becker Antriebe" shutter also known as CC31 or CC51 using the Centronic Stick V2
 
 ```
