@@ -147,6 +147,10 @@ Use the argument `--mod "<code>:<increment>:<configured>"` (CAREFULLY) to set th
 
 ### CHANGELOG
 
+**v0.6**
+
+- added two more units ("1737e" and "1737f") counting a total of 5 units (35 possible channels)
+
 **v0.5**
 
 - save incremental numbers (per unit) into sqlite3 db

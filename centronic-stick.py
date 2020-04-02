@@ -42,11 +42,11 @@ def showhelp():
     print("   --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/TRAIN/REMOVE commands / requires '--channel'")
     print("                     While UP2 and DOWN2 are the intermediate position (E.g. sun protection)")
     print("  --device <device>: set the device if it differs from the default, also host:port possible (ser2net)")
-    print("--channel <[unit:]channel>: define the unit (1-3) and channel (1-7) being used for '--send'. Example: 2:15 will close shutter for unit 2 on all channels")
+    print("--channel <[unit:]channel>: define the unit (1-5) and channel (1-7) being used for '--send'. Example: 2:15 will close shutter for unit 2 on all channels")
     print("  --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)")
     print("   --mod <modifier>: used to manipulate the db entries - FOR VERY ADVANCED USERS")
     print('')
-    print('Version 0.5 - Authors: ole1986, toolking')
+    print('Version 0.6 - Authors: ole1986, toolking')
 
 class Database:
 
@@ -67,28 +67,35 @@ class Database:
         checkTable = c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='unit'")
         if checkTable.fetchone() is None:
             self.create()
-            self.migrate()
+            
+        self.migrate()
 
     def migrate(self):
-        # migrate the previous *.num file into its sqllite database
-        self.oldfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), NUMBER_FILE)
-
-        if not os.path.isfile(self.oldfile):
-            return
-
         try:
-            print('Migrate previous *.num file...')
-            with open(self.oldfile, "r") as file:
-                number = int(file.read())
+            # migrate the previous *.num file into its sqllite database
+            self.oldfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), NUMBER_FILE)
+            if os.path.isfile(self.oldfile):
+                print('Migrate previous *.num file...')
+                with open(self.oldfile, "r") as file:
+                    number = int(file.read())
+                    c = self.conn.cursor()
+                    c.execute("UPDATE unit SET increment = ?, configured = ? WHERE code = ?", (number, 1, '1737b',))
+                    self.conn.commit()
+                    os.remove(self.oldfile)
 
+            # add additional units
             c = self.conn.cursor()
-            c.execute("UPDATE unit SET increment = ?, configured = ? WHERE code = ?", (number, 1, '1737b',))
-            self.conn.commit()
-            os.remove(self.oldfile)
+            count = c.execute("SELECT COUNT(*) FROM unit").fetchone()[0]
+            if count <= 3:
+                print('Migrate more units...')
+                c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737e', 0, 0, 0,))
+                c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737f', 0, 0, 0,))
+                self.conn.commit()
+            
         except:
             print('Migration failed')
             self.conn.rollback()
-
+        
     def create(self):
         # create the database table
 
