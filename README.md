@@ -22,53 +22,50 @@ It is necessary to own such USB device and to PAIR it first, before using comman
 Version 0.5 - Authors: ole1986, toolking
 ```
 
-### INSTALL
+### INSTALLATION
 
 Run the `install.sh` script to install all necessary dependencies.
-The installer will also configure sudo to allow FHEM the execution of `centronic-stick.py` as current user.
+The installer will also configure sudo to allow FHEM the execution of `centronic-stick.py`.
 
 For those who are familar with the installation routine, the following steps are required
 
 * Install python3 pip
 * Install python3 module `pyserial` using python3 pip
-* Install python3 module `sqlite3` using python3 pip
 * Add `fhem` user into sudoers file to allow executing `centronic-stick.py` from the FHEM website
 
-### PAIRING
+### PROGRAM THE RECEIVER
 
-Before the USB stick can be used, a pairing must be achieved.
+To make recievers listening to the USB Stick, the "master sender" is required to add a new sender.
+The "master sender" can either be the wall-mounted transmitter or a remote.
 
-To make the reciever listening to new senders, either the "receiver" itself or the "master sender" can be used. For the sake of simplicity the below steps are focused on the "master sender" (this can be a wall-mounted transmitter or a remote / BUT NEVER BOTH)
-
-**1) Press and hold the programming button on the MASTER SANDER for 3 seconds**
+**1) Press and hold the programming button on the MASTER SENDER for ~3 seconds**
 The receiver should confirm with a single "Klack" noise
 
-**2) Run the below commands to TRAIN the receiver**
+**2) Run the below command to TRAIN the receiver**
 The receiver should confirm with a single "Klack" noise followed by a "Klack - Klack" once the training succeeded
 
 ```
 ./centronic-stick.py --send TRAIN --channel 1
 ```
 
-Repeat the steps for all the receivers.
+Repeat the steps for all the receivers using different channels (E.g. `--channel 2`, `--channel 3`, [...])
 
-To control each receiver individually it is neccessary to change the channel number. Otherwise all paired receivers will act on the same channel
-
-*You have successfully paired the Centronic Stick with your shutter*
+*You have successfully paired the Centronic Stick with your shutter(s)*
 
 ### MORE CHANNELS
 
-By default the `--channel` argument relays on a single unit  for 1-7 channels. For more channels to be configured nd commands need to be executed for the `--channel` argument can be extended with two additional units.
+By default the `--channel` argument relays on a single unit for a maximum of **7 channels**. 
+If more channels are required, the `--channel` argument can be used to choose different units (max 3)
 
 Example:
 
 ```
-# Train another (kind of virtual) unit on channel 1
+# program another unit on channel 1
 ./centronic-stick.py --send TRAIN --channel 2:1
 ```
 
 ```
-# Train a third unit on channel 7
+# program a third unit on channel 7
 ./centronic-stick.py --send TRAIN --channel 3:7
 ```
 
@@ -77,18 +74,21 @@ Example:
 To move down the shutter, run the below command (amend the channel if neccessary)
 
 ```
+# move down the shutter programmed on channel 1 for unit 1
 ./centronic-stick.py --send DOWN --channel 1
 ```
 
 To move up the shutter on unit 2 and channel, run the below command
 
 ```
+# move up the shutter programmed on channel 1 for unit 2
 ./centronic-stick.py --send UP --channel 2:1
 ```
 
 To pause the movement on unit 3 and channel 1 (which is not the same as unit 1 and channel 1), run the command
 
 ```
+# stop shutter on unit 3 channel 1
 ./centronic-stick.py --send HALT --channel 3:1
 ```
 
@@ -99,10 +99,11 @@ To move down all shutters per explicit unit, run the below command
 ./centronic-stick.py --send HALT --channel 1:15
 ```
 
-To move down all shutters for ALL configured units, run the below command (check `-s` argument to see which unit is configured)
+To move down all shutters on ALL configured units, run the below command (check `-s` argument to see which unit is configured)
 
 ```
-./centronic-stick.py --send HALT --channel 0:15
+# move down shutter on all configured units and all channels (15 = broadcast)
+./centronic-stick.py --send DOWN --channel 0:15
 ```
 
 ### REMOVE SENDER
@@ -116,12 +117,13 @@ The receiver should confirm with a single "Klack" noise
 The receiver should confirm with a single "Klack" noise followed by a "Klack - Klack"
 
 ```
+# remove unit 1 with channel 1 from the shutter
 ./centronic-stick.py --send REMOVE --channel 1
 ```
 
 **Please note that this command is per channel*
 
-Once all senders are removed from ALL RECEIVERS it is safe to reset the increment counter using `--mod` argument.
+Once ALL SENDERS for a specific unit are removed from ALL RECEIVERS it is safe to reset the increment counter using `--mod` argument.
 
 ### DB OUTPUT
 
@@ -136,11 +138,10 @@ code      increment configured  last run
 
 ### TROUBLESHOOTING
 
-Since this script requires to store the incremental numbers for any unit being configured, the database file `centronic-stick.db` is used
+Since this script requires to store the incremental numbers for any unit being configured, the database file `centronic-stick.db` is used.
+It might be necessary to manually change or increase the number to match with the receiver.
 
-It might be necessary to manually increase the number to match with the receiver.
-
-Use the argument (CAREFULLY) `--mod "<code>:<increment>:<configured>"` to set the unit properties
+Use the argument `--mod "<code>:<increment>:<configured>"` (CAREFULLY) to set the unit properties
 
 ### CHANGELOG
 
