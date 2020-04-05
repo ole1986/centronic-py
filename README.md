@@ -1,8 +1,10 @@
 # Using Centronic USB Stick to control Becker Shutter CC31/CC51
 
-[![Donations Badge](https://yourdonation.rocks/images/badge.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TDSRUDJ9EL98J&source=url)
+[TECHNICAL NOTES](TECHNICAL.md) | [CHANGELOG](CHANGELOG.md)
 
 This project is used to automate "Becker Antriebe" shutter also known as CC31 or CC51 using the Centronic Stick V2
+
+[![Donations Badge](https://yourdonation.rocks/images/badge.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TDSRUDJ9EL98J&source=url)
 
 ```
 ./centronic-stick.py [-hlst] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|TRAIN|REMOVE> --channel <[unit:]channel>]
@@ -35,7 +37,7 @@ For those who are familar with the installation routine, the following steps are
 * Install python3 module `pyserial` using python3 pip
 * Add `fhem` user into sudoers file to allow executing `centronic-stick.py` from the FHEM website
 
-### PROGRAM THE RECEIVER
+### PROGRAM RECEIVER
 
 To make recievers listening to the USB Stick, the "master sender" is required to add a new sender.
 The "master sender" can either be the wall-mounted transmitter or a remote.
@@ -54,7 +56,7 @@ Repeat the steps for all the receivers using different channels (E.g. `--channel
 
 *You have successfully paired the Centronic Stick with your shutter(s)*
 
-### MORE CHANNELS
+### ADD MORE CHANNELS
 
 By default the `--channel` argument relays on a single unit for a maximum of **7 channels**. 
 If more channels are required, the `--channel` argument can be used to choose different units (max 3)
@@ -71,7 +73,7 @@ Example:
 ./centronic-stick.py --send TRAIN --channel 3:7
 ```
 
-### CONTROL EXAMPLE
+### EXAMPLE USAGE
 
 To move down the shutter, run the below command (amend the channel if neccessary)
 
@@ -127,15 +129,17 @@ The receiver should confirm with a single "Klack" noise followed by a "Klack - K
 
 Once ALL SENDERS for a specific unit are removed from ALL RECEIVERS it is safe to reset the increment counter using `--mod` argument.
 
-### DB OUTPUT
+### DATABASE OUTPUT
 
 Below is an example output of the sqlite3 database
 
 ```
 code      increment configured  last run       
 1737b     825       1           2020-04-01 17:26
-1737c     0         0           (unknown)      
-1737d     0         0           (unknown)  
+1737c     0         0           (unknown)
+1737d     0         0           (unknown)
+1737e     0         0           (unknown)
+1737f     0         0           (unknown)
 ```
 
 ### TROUBLESHOOTING
@@ -144,37 +148,3 @@ Since this script requires to store the incremental numbers for any unit being c
 It might be necessary to manually change or increase the number to match with the receiver.
 
 Use the argument `--mod "<code>:<increment>:<configured>"` (CAREFULLY) to set the unit properties
-
-### CHANGELOG
-
-**v0.6**
-
-- added two more units ("1737e" and "1737f") counting a total of 5 units (35 possible channels)
-
-**v0.5**
-
-- save incremental numbers (per unit) into sqlite3 db
-- support for up to 3 units (allowing to manage ~21 channels)
-- corrected the channels being used (1-7 and 15)
-- slightly amended `--channel <[unit:]channel>` parameter to take units into account
-- added `-s` argument to output sqllite3 db content (containing last run for instance)
-- removed `-i` to manually increment counter
-- added `--mod` (for very advanced users) to modify database entry
-- replaced `PAIR` command with `TRAIN` needed to train the shutter
-- added `REMOVE` command to remove the sender from shutter
-
-**v0.4**
-
-- added ser2net support for device
-
-**v0.3**
-
-- added commands "DOWN2" and "UP2" for intermediate positions
-
-**v0.2**
-
-- always use "centronic.num" from its local directory
-
-**v0.1**
-
-- Initial version
