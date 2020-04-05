@@ -1,10 +1,6 @@
-# Using Centronic USB Stick to control Becker Shutter CC31/CC51
-
-[TECHNICAL NOTES](TECHNICAL.md) | [CHANGELOG](CHANGELOG.md)
-
-This project is used to automate "Becker Antriebe" shutter also known as CC31 or CC51 using the Centronic Stick V2
-
 [![Donations Badge](https://yourdonation.rocks/images/badge.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TDSRUDJ9EL98J&source=url)
+
+This project automates "Becker Antriebe" shutter also known as CC31/CC51 using the Centronic USB Stick V2
 
 ```
 ./centronic-stick.py [-hlst] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|TRAIN|REMOVE> --channel <[unit:]channel>]
@@ -39,8 +35,9 @@ For those who are familar with the installation routine, the following steps are
 
 ### PROGRAM RECEIVER
 
-To make recievers listening to the USB Stick, the "master sender" is required to add a new sender.
-The "master sender" can either be the wall-mounted transmitter or a remote.
+To make recievers listening to the Centronic USB Stick, the "master sender" is required to add additional senders. The "master sender" can either be the wall-mounted transmitter or a remote.
+
+To program another sender, please follow the beliw instruction
 
 **1) Press and hold the programming button on the MASTER SENDER for ~3 seconds**
 The receiver should confirm with a single "Klack" noise
@@ -58,8 +55,9 @@ Repeat the steps for all the receivers using different channels (E.g. `--channel
 
 ### ADD MORE CHANNELS
 
-By default the `--channel` argument relays on a single unit for a maximum of **7 channels**. 
-If more channels are required, the `--channel` argument can be used to choose different units (max 3)
+By default the `--channel` argument uses the first known unit (registered in the database file) for a maximum of **7 channels**.
+
+If more channels are required, the `--channel` argument can be used to choose different units (maximum 5)
 
 Example:
 
@@ -148,3 +146,5 @@ Since this script requires to store the incremental numbers for any unit being c
 It might be necessary to manually change or increase the number to match with the receiver.
 
 Use the argument `--mod "<code>:<increment>:<configured>"` (CAREFULLY) to set the unit properties
+
+Further technical details can be found in the [TECHNICAL.md](TECHNICAL.md) document
