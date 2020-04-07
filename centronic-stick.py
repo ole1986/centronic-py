@@ -7,6 +7,8 @@ import time
 import sqlite3
 import socket
 import serial  # pyserial module required
+import time
+import re
 
 # <STX> and <ETX> for every single code being send
 STX = b'\x02'
@@ -21,16 +23,27 @@ CODE_REMOTE = "01" # centronic remote control used "02" while contralControl see
 
 COMMAND_HALT = 0x10 # stop 
 COMMAND_UP = 0x20 # move up
-COMMAND_UP2 = 0x24  # intermediate position "up"
+COMMAND_UP2 = 0x21 # move up
+COMMAND_UP3 = 0x22 # move up
+COMMAND_UP4 = 0x23 # move up
+COMMAND_UP5 = 0x24  # intermediate position "up"
 COMMAND_DOWN = 0x40 # move down
-COMMAND_DOWN2 = 0x44  # intermediate position "down" (sun protection)
+COMMAND_DOWN2 = 0x41 # move down
+COMMAND_DOWN3 = 0x42 # move down
+COMMAND_DOWN4 = 0x43 # move down
+COMMAND_DOWN5 = 0x44  # intermediate position "down" (sun protection)
 COMMAND_PAIR = 0x80 # pair button press
 COMMAND_PAIR2 = 0x81  # pair button pressed for 3 seconds (without releasing)
 COMMAND_PAIR3 = 0x82  # pair button pressed for 6 seconds (without releasing)
 COMMAND_PAIR4 = 0x83 # pair button pressed for 10 seconds (without releasing)
 
+COMMAND_CLEARPOS = 0x90
+COMMAND_CLEARPOS2 = 0x91
+COMMAND_CLEARPOS3 = 0x92
+COMMAND_CLEARPOS4 = 0x93
+
 def showhelp():
-    print('%s [-hlst] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|TRAIN|REMOVE> --channel <[unit:]channel>]' % sys.argv[0])
+    print('%s [-hlst] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|TRAIN|TRAINMASTER|REMOVE> --channel <[unit:]channel>]' % sys.argv[0])
     print('')
     print('This script is used send command codes to CC11/CC51 compatible receivers through the CentronicControl USB Stick')
     print('It is necessary to own such USB device and to PAIR it first, before using commands like UP and DOWN')
@@ -212,21 +225,34 @@ class USBStick:
                 self.runcodes(ch, unit, cmd, test)
 
     def runcodes(self, channel, unit, cmd, test):
-        if unit[2] == 0 and cmd != "TRAIN":
+        if unit[2] == 0 and cmd != "TRAIN" and cmd != "TRAINMASTER":
             print("The unit %s is not configured" % (unit[0]))
             return
+
+        # move up/down dependent on given time
+        mt = re.match("(DOWN|UP):(\d+)", cmd)
 
         codes = []
         if cmd == "UP":
             codes.append(self.generatecode(channel, unit, COMMAND_UP))
         elif cmd == "UP2":
-            codes.append(self.generatecode(channel, unit, COMMAND_UP2))
+            codes.append(self.generatecode(channel, unit, COMMAND_UP5))
         elif cmd == "HALT":
             codes.append(self.generatecode(channel, unit, COMMAND_HALT))
         elif cmd == "DOWN":
             codes.append(self.generatecode(channel, unit, COMMAND_DOWN))
         elif cmd == "DOWN2":
-            codes.append(self.generatecode(channel, unit, COMMAND_DOWN2))
+            codes.append(self.generatecode(channel, unit, COMMAND_DOWN5))
+        elif cmd == "CLEARPOS":
+            codes.append(self.generatecode(channel, unit, COMMAND_PAIR))
+            unit[1] += 1
+            codes.append(self.generatecode(channel, unit, COMMAND_CLEARPOS))
+            unit[1] += 1
+            codes.append(self.generatecode(channel, unit, COMMAND_CLEARPOS2))
+            unit[1] += 1
+            codes.append(self.generatecode(channel, unit, COMMAND_CLEARPOS3))
+            unit[1] += 1
+            codes.append(self.generatecode(channel, unit, COMMAND_CLEARPOS4))
         elif cmd == "TRAIN":
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR))
             unit[1] += 1
@@ -249,12 +275,33 @@ class USBStick:
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR3))
             unit[1] += 1
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR4))
+        elif cmd == "TRAINMASTER":
+            codes.append(self.generatecode(channel, unit, COMMAND_PAIR))
+            unit[1] += 1
+            codes.append(self.generatecode(channel, unit, COMMAND_PAIR2))
+            unit[1] += 1
+            codes.append(self.generatecode(channel, unit, COMMAND_PAIR3))
+            unit[1] += 1
+            codes.append(self.generatecode(channel, unit, COMMAND_PAIR4))
+            # set unit as configured
+            unit[2] = 1
 
-        unit[1] += 1
+        if mt:
+            print("Moving %s for %s seconds..." % (mt.group(1), mt.group(2)))
+            # move down/up for a specific time
+            if mt.group(1) == "UP":
+                code = self.generatecode(channel, unit, COMMAND_UP)
+            elif mt.group(1) == "DOWN":
+                code = self.generatecode(channel, unit, COMMAND_DOWN)
+
+            unit[1] += 1
+            self.write([code],test)
+            time.sleep(int(mt.group(2)))
+        else:
+            unit[1] += 1
 
         # append the release button code
         codes.append(self.generatecode(channel, unit, 0))
-
         unit[1] += 1
 
         self.write(codes,test)
