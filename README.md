@@ -112,7 +112,7 @@ To move down all shutters on ALL configured units, run the below command (check 
 
 To unpair the centronic-stick.py the following steps can be achieved
 
-**1) Press and hold the programming button on the MASTER SANDER for 3 seconds**
+**1) Press and hold the programming button on the MASTER SENDER for 3 seconds**
 The receiver should confirm with a single "Klack" noise
 
 **2) Run the below commands to REMOVE the sender from its receiver**
