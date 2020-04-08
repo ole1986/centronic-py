@@ -230,7 +230,7 @@ class USBStick:
             return
 
         # move up/down dependent on given time
-        mt = re.match("(DOWN|UP):(\d+)", cmd)
+        mt = re.match(r"(DOWN|UP):(\d+)", cmd)
 
         codes = []
         if cmd == "UP":
