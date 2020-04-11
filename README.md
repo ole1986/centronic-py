@@ -3,7 +3,7 @@
 This project automates "Becker Antriebe" shutter also known as CC31/CC51 using the Centronic USB Stick V2
 
 ```
-./centronic-stick.py [-hlst] [--checksum <code>] [--device <device>] [--send <UP|UP2|DOWN|DOWN2|HALT|TRAIN|REMOVE> --channel <[unit:]channel>]
+./centronic-stick.py [-hlst] [--checksum <code>] [--device <device>] [--add <modifier>] [--mod <modifier>] [--remove <code>] [--send <UP|UP2|DOWN|DOWN2|HALT|DOWN:<delay>|UP:<delay>|CLEARPOS|TRAIN|TRAINMASTER|REMOVE> --channel <[unit:]channel>]
 
 This script is used send command codes to CC11/CC51 compatible receivers through the CentronicControl USB Stick
 It is necessary to own such USB device and to PAIR it first, before using commands like UP and DOWN
@@ -12,14 +12,16 @@ It is necessary to own such USB device and to PAIR it first, before using comman
                  -l: listen on the centronic USB device to fetch the codes
                  -s: display the current db stats (incl. last run of a unit)
                  -t: test mode - no codes will be send and no numbers consumed / works only with '--send'
-   --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/TRAIN/REMOVE commands / requires '--channel'
+   --send <command>: submit a completely generated code for UP/UP2/DOWN/DOWN2/HALT/DOWN:<delay>/UP:<DELAY>/CLEARPOS/TRAIN/REMOVE commands / requires '--channel'
                      While UP2 and DOWN2 are the intermediate position (E.g. sun protection)
   --device <device>: set the device if it differs from the default, also host:port possible (ser2net)
 --channel <[unit:]channel>: define the unit (1-5) and channel (1-7) being used for '--send'. Example: 2:15 will close shutter for unit 2 on all channels
   --checksum <code>: add a checksum to the given 40 char code and output (without STX, ETX)
-   --mod <modifier>: used to manipulate the db entries - FOR VERY ADVANCED USERS
+   --mod <modifier>: used to manipulate the db entries
+   --add <modifier>: used to add a db entry
+    --remove <code>: used to remove an entry from db
 
-Version 0.6 - Authors: ole1986, toolking
+Version 0.7 - Authors: ole1986, toolking
 ```
 
 ### INSTALLATION
