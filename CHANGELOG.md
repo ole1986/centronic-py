@@ -1,3 +1,10 @@
+**v0.7**
+
+- command to move up/down for a specific delay `--send DOWN|UP:<delay>` until release button is simulated (UNTESTED)
+- command to clear stop positions `--send CLEARPOS`
+- provided `--add <modifier>` and `--remove <code>` option to add or remove units
+- support for `--channel 0` (zero) allowing to master wall mounted senders (overrides CODE_REMOTE)
+
 **v0.6**
 
 - added two more units ("1737e" and "1737f") counting a total of 5 units (35 possible channels)
