@@ -18,7 +18,7 @@ echo "Installing pip module 'pyserial'"
 /usr/bin/python3 -m pip install pyserial
 
 echo "Checking for FHEM installation..."
-if [ -d "/opt/fhem"]
+if [ -d "/opt/fhem" ]
 then
     read -p "Allow FHEM to run 'centronic-stick.py' as $USER? " -n 1 -r
     if [[ $REPLY =~ ^[Yy]$ ]]
