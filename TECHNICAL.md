@@ -11,6 +11,21 @@ Some facts about the incremental counter being used to control the shutters
 Knowing that the increment will restart from 0 (zero) once the max value has been reached
 confirms that the `./centronic-stick.py` script will continue to work (even if the counter is higher than 65535 due to its `hex4(number)` conversion)
 
+**UPDATE: The increment value can be overwritten at ANY TIME by submitting a command (E.g. DOWN) three times in a row. Once done, the receiver will accept the new incremental number in future**
+
+By knowing this, an incremental reset to 0 (zero) can be achieved as follow.
+(please note that this may be required for every single channel)
+
+```
+# assuming the channel unit "2" has been used
+# reset the increment to zero minus 5
+./centronic-stick.py --mod 1737c:65530:1
+# repeat HALT command 3 times to force reset the blinds incremental
+for i in {1..3}; do ./centronic-stick.py --send HALT --channel 2:1; done
+# reset the increment to zero
+./centronic-stick.py --mod 1737c:0:1
+```
+
 ### USB Stick code revealed
 
 The below illustrates the USB Stick code being submitted through serial connection in order to control the shutter.
