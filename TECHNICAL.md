@@ -32,33 +32,47 @@ The below illustrates the USB Stick code being submitted through serial connecti
 While the complete code is required to send the radio frequency (RF) signal, several parts do not matter what the content is.
 
 ```
-          Does not effect RF code (can be anything)
-                       |
-                    |----|
-0000000002010B 0000 000000 FFFFF 021 0101 00 20 C4  => CA5E62AB5D0716BB8 (RF code)
-|------------|                   |-|      |     |
-      |                           |       |     Checksum is important for USB Stick to accept submission of the code
-  Is required for USB Stick       |       |     
-  Otherwise not signal sent       |       Does not effect RF code
-                                  |       
-                       Does not effect RF code
+                increment (len = 4)
+                |
+                |                    MODE? (Simple / Clock?!) 
+                |                    |
+                |                    |           Command args (1 = 3SEC delay, 2 = 6SEC delay, 3 = 9SEC delay, 4 = DT, 8 = SHIFT, ...)
+                |                    |  ?        |
+                |                ?   |  |        | Checksum
+               |--|              | |--| |        | |
+0000000002010B 0000 000000 1737C 0 2102 0 4 00 1 8 00
+|----------||       |----| |---|          |    |
+     |      |          |     |            |    Command (2 = UP, 4 = DOWN, 1 = HALT, 0 = BUTTON RELEASE)
+     |      |          |     |            |
+     |      |          |     |            Group / Channel (F = All)
+     |      ?          |     |
+     |                 |     unit code (len = 6)
+     |                 |
+     |                 Does not effect RF code (can be anything)
+     |
+     Always same (but required)
+     Otherwise no signal is being sent
 ```
 
 By knowing this, the below are the relevant parts for sending the RF signal
 
 ```
-0000000002010B 0000 000000 FFFFF 021 0101 00 20 C4 => CA5E62AB5D0716BB8 (RF code)
-               |--|        |---|     |--|    |  |
-                |            |        |      |  Checksum (not confirmed)
-                Increment    |        |      |
-                            Unit      CODE_REMOTE (01) and channel (01)
-                                             |
-                                             Command (UP/DOWN/TRAIN 3sec/...)
-
+XXXXXXXXXXXXXX 0000 XXXXXX FFFFF F 2101 0 XX 2 0 C4 => CA5E62AB5D0716BB8 (RF code)
+               |--|        |---|   |--| |    | | |
+                |            |      |   |    | | Checksum (not confirmed)
+                Increment    |      |   |    | |
+                            Unit    ?   |    | Command args (1 = 3SEC delay, 2 = 6SEC delay, 3 = 9SEC delay, 8 = SHIFT, ...)
+                                        |    |
+                                        |    Command (UP/DOWN/TRAIN/...)
+                                        |
+                                        Group / Channel (F = All)
+                                         
 Increment: MAX = 0xFFFF / MIN = 0x0000
-Unit: MAX = 0xFFFFF / MIN = 0x00000
-CODE_REMOTE: Only 02 / 01 / 00 is known
-Channel: Range 0x00 to 0x0F is used (possible other options available)
+Unit: MAX = 0xFFFFF / MIN = 0x0000
+Channel: Range 0x0 to 0xF
+Command: 0, 1, 2, 4, ... (HALT, UP, DOWN, ...)
+Status?: 3SEC, 6SEC, 9SEC,8 = SHIFT
+Checksum: MAX = 0xFF / MIN = 0x00
 ```
 
 ### RECEIVE RAW SIGNAL USING FHEM

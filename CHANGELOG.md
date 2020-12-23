@@ -1,3 +1,10 @@
+**0.8**
+
+- slightly improved the amount of codes being sent (since we do not need to simulate button release)
+- allow using the `--mod 1:0:1` arguments with index numbers (starting at one) instead of the exact unit code (E.g. 1737b0)
+- display the increment as hex code when using `-s` argument
+- fixed delayed movements using `--send UP:<delay>` or `--send DOWN:<delay>` commands
+
 **v0.7**
 
 - command to move up/down for a specific delay `--send DOWN|UP:<delay>` until release button is simulated (UNTESTED)

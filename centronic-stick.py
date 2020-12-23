@@ -36,7 +36,7 @@ COMMAND_DOWN5 = 0x44  # intermediate position "down" (sun protection)
 COMMAND_PAIR = 0x80 # pair button press
 COMMAND_PAIR2 = 0x81  # pair button pressed for 3 seconds (without releasing)
 COMMAND_PAIR3 = 0x82  # pair button pressed for 6 seconds (without releasing)
-COMMAND_PAIR4 = 0x83 # pair button pressed for 10 seconds (without releasing)
+COMMAND_PAIR4 = 0x83 # pair button pressed for 9 seconds (without releasing)
 
 COMMAND_CLEARPOS = 0x90
 COMMAND_CLEARPOS2 = 0x91
@@ -62,7 +62,7 @@ def showhelp():
     print("   --add <modifier>: used to add a db entry")
     print("    --remove <code>: used to remove an entry from db")
     print('')
-    print('Version 0.7 - Authors: ole1986, toolking')
+    print('Version 0.8 - Authors: ole1986, toolking')
 
 class Database:
 
@@ -88,26 +88,10 @@ class Database:
 
     def migrate(self):
         try:
-            # migrate the previous *.num file into its sqllite database
             self.oldfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), NUMBER_FILE)
             if os.path.isfile(self.oldfile):
-                print('Migrate previous *.num file...')
-                with open(self.oldfile, "r") as file:
-                    number = int(file.read())
-                    c = self.conn.cursor()
-                    c.execute("UPDATE unit SET increment = ?, configured = ? WHERE code = ?", (number, 1, '1737b',))
-                    self.conn.commit()
-                    os.remove(self.oldfile)
-
-            # add additional units
-            c = self.conn.cursor()
-            count = c.execute("SELECT COUNT(*) FROM unit").fetchone()[0]
-            if count <= 3:
-                print('Migrate more units...')
-                c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737e', 0, 0, 0,))
-                c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737f', 0, 0, 0,))
-                self.conn.commit()
-            
+                print('Please run the previous version to migrate the *.num file')
+                sys.exit()
         except:
             print('Migration failed')
             self.conn.rollback()
@@ -121,18 +105,20 @@ class Database:
         c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737b', 0, 0, 0,))
         c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737c', 0, 0, 0,))
         c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737d', 0, 0, 0,))
+        c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737e', 0, 0, 0,))
+        c.execute("INSERT INTO unit VALUES (?, ?, ?, ?)", ('1737f', 0, 0, 0,))
 
         self.conn.commit()
 
     def output(self):
         c = self.conn.cursor()
         res = c.execute('SELECT * FROM unit')
-        print('%-10s%-10s%-12s%-15s' % ('code', 'increment', 'configured', 'last run'))
+        print('%-10s%-18s%-12s%-15s' % ('code', 'increment (hex)', 'configured', 'last run'))
         for line in res.fetchall():
             lastrun='(unknown)'
             if line[3] > 0:
                 lastrun = time.strftime('%Y-%m-%d %H:%M', time.localtime(line[3]))
-            print('%-10s%-10s%-12s%-15s' % (line[0], line[1], line[2] ,lastrun))
+            print('%-10s%-6s%-12s%-12s%-15s' % (line[0], line[1], "(0x" + hex4(line[1]) + ")" , line[2] ,lastrun))
 
     def get_unit(self, rowid):
         c = self.conn.cursor()
@@ -176,8 +162,12 @@ class Database:
         c = self.conn.cursor()
         last_run = int(time.time())
 
-        c.execute('UPDATE unit SET increment = ?, configured = ?, executed = ? WHERE code = ?', (unit[1], unit[2], last_run, unit[0],))
-
+        if len(unit[0]) < 5:
+            # assume the index is given (and not the exact unit)
+            c.execute('UPDATE unit SET increment = ?, configured = ?, executed = ? WHERE code = (SELECT code FROM unit LIMIT 1 OFFSET ?)', (unit[1], unit[2], last_run, int(unit[0]) - 1,))
+        else:
+            c.execute('UPDATE unit SET increment = ?, configured = ?, executed = ? WHERE code = ?', (unit[1], unit[2], last_run, unit[0],))
+        
         if test:
             self.conn.rollback()
             return
@@ -280,27 +270,20 @@ class USBStick:
             unit[1] += 1
             codes.append(self.generatecode(channel, unit, COMMAND_CLEARPOS4))
         elif cmd == "TRAIN":
-            codes.append(self.generatecode(channel, unit, COMMAND_PAIR))
-            unit[1] += 1
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR2))
-            unit[1] += 1
-            codes.append(self.generatecode(channel, unit, COMMAND_PAIR))
             unit[1] += 1
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR2))
             # set unit as configured
             unit[2] = 1
         elif cmd == "REMOVE":
-            codes.append(self.generatecode(channel, unit, COMMAND_PAIR))
-            unit[1] += 1
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR2))
-            unit[1] += 1
-            codes.append(self.generatecode(channel, unit, COMMAND_PAIR))
             unit[1] += 1
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR2))
             unit[1] += 1
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR3))
             unit[1] += 1
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR4))
+            unit[2] = 0
         elif cmd == "TRAINMASTER":
             codes.append(self.generatecode(channel, unit, COMMAND_PAIR))
             unit[1] += 1
@@ -322,13 +305,19 @@ class USBStick:
 
             unit[1] += 1
             self.write([code],test)
+
             time.sleep(int(mt.group(2)))
+
+            # stop moving
+            code = self.generatecode(channel, unit, COMMAND_HALT)
+            unit[1] += 1
+            self.write([code],test)
         else:
             unit[1] += 1
 
-        # append the release button code
-        codes.append(self.generatecode(channel, unit, 0))
-        unit[1] += 1
+        # simulating the release button is not necessary
+        #codes.append(self.generatecode(channel, unit, 0))
+        #unit[1] += 1
 
         self.write(codes,test)
         self.db.set_unit(unit, test)
