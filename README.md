@@ -147,6 +147,6 @@ code      increment configured  last run
 Since this script requires to store the incremental numbers for any unit being configured, the database file `centronic-stick.db` is used.
 It might be necessary to manually change or increase the number to match with the receiver.
 
-Use the argument `--mod "<code>:<increment>:<configured>"` (CAREFULLY) to set the unit properties
+Use the argument `--mod "<unit>:<increment>:<configured>"` (CAREFULLY) to set the unit properties
 
 Further technical details can be found in the [TECHNICAL.md](TECHNICAL.md) document
