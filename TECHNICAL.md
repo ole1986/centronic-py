@@ -46,7 +46,7 @@ While the complete code is required to send the radio frequency (RF) signal, sev
      |      |          |     |            |
      |      |          |     |            Group / Channel (F = All)
      |      ?          |     |
-     |                 |     unit code (len = 6)
+     |                 |     unit code (len = 5)
      |                 |
      |                 Does not effect RF code (can be anything)
      |
