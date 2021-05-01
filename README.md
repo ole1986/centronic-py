@@ -1,4 +1,4 @@
-[![Donations Badge](https://yourdonation.rocks/images/badge.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TDSRUDJ9EL98J&source=url)
+[![Donations Badge](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TDSRUDJ9EL98J&source=url)
 
 This project automates "Becker Antriebe" shutter also known as CC31/CC51 using the Centronic USB Stick V2
 
